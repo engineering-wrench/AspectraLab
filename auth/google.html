@@ -39,6 +39,20 @@
     } else {
         alert('Ошибка аутентификации');
     }
+=======
+        // Извлекаем access_token из URL
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+
+        if (accessToken) {
+            // Сохраняем токен в localStorage
+            localStorage.setItem('google_access_token', accessToken);
+            // Перенаправляем пользователя на главную страницу
+            window.location.href = 'https://engineering-wrench.github.io/AspectraLab/';
+        } else {
+            alert('Ошибка аутентификации');
+        }
     </script>
 </head>
 <body>
