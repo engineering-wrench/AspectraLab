@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оцените схожеть слов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .nav-button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+        }
+
+        .comparison-text {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .scale-container {
+            width: 100%;
+            height: 40px;
+            background: #eee;
+            border-radius: 20px;
+            margin: 40px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scale-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b 0%, #4CAF50 100%);
+            width: 50%;
+            border-radius: 20px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .buttons-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .control-button {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #4CAF50;
+            color: white;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.3);
+        }
+
+        .control-button.secondary {
+            background: #2196F3;
+        }
+
+        .control-button.warning {
+            background: #ff9800;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .buttons-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-text {
+                font-size: 20px;
+            }
+        }
+
+        .error-message {
+            color: #ff4444;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="main.html" class="nav-button">← Вернуться на главную</a>
+        
+        <div class="comparison-text">
+            Слово <strong id="word1">*слово1*</strong> похоже на слово 
+            <strong id="word2">*слово2*</strong> как...
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_TOKEN = 'ваш_github_token_здесь';
+        const REPO_OWNER = 'engineering-wrench';
+        const REPO_NAME = 'data';
+        
+        let currentValue = 5;
+        let currentWords = { word1: '', word2: '' };
+
+        // Инициализация при загрузке
+        window.onload = async () => {
+            await loadVectors();
+            checkNickname();
+            updateScale();
+        };
+
+        // Проверка наличия никнейма
+        function checkNickname() {
+            if (!localStorage.getItem('nickname')) {
+                alert('Никнейм не найден! Пожалуйста, установите его на главной странице.');
+                window.location.href = 'main.html';
+            }
+        }
+
+        // Загрузка векторов из репозитория
+        async function loadVectors() {
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3.raw'
+                    }
+                });
+                const text = await response.text();
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                const words = lines.map(line => line.split(':')[0]);
+                
+                // Выбор двух случайных слов
+                currentWords.word1 = words[Math.floor(Math.random() * words.length)];
+                currentWords.word2 = words[Math.floor(Math.random() * words.length)];
+                while (currentWords.word2 === currentWords.word1) {
+                    currentWords.word2 = words[Math.floor(Math.random() * words.length)];
+                }
+
+                // Обновление текста на странице
+                document.getElementById('word1').textContent = currentWords.word1;
+                document.getElementById('word2').textContent = currentWords.word2;
+            } catch (error) {
+                console.error('Ошибка при загрузке векторов:', error);
+            }
+        }
+
+        // Обновление шкалы
+        function updateScale() {
+            const scale = document.getElementById('scale');
+            scale.style.width = `${currentValue * 10}%`;
+        }
+
+        // Обновление никнейма в nickname.txt
+        async function updateNickname(nickname, score) {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3.raw'
+                    }
+                });
+                let content = await response.text();
+                const lines = content.split('\n');
+                let found = false;
+                const newLines = lines.map(line => {
+                    const [user, points] = line.split(':');
+                    if (user === nickname) {
+                        found = true;
+                        const newPoints = parseInt(points || 0) + score;
+                        return `${nickname}:${newPoints}`;
+                    }
+                    return line;
+                });
+                if (!found) {
+                    newLines.push(`${nickname}:${score}`);
+                }
+                const newContent = newLines.join('\n');
+
+                // Получение SHA текущего файла для обновления
+                const infoResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                const info = await infoResponse.json();
+                const sha = info.sha;
+
+                // Отправка обновлённого файла
+                const updateResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.txt`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Обновление баллов пользователя',
+                        content: btoa(newContent), // Кодируем содержимое в base64
+                        sha: sha
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    throw new Error('Ошибка при обновлении nickname.txt');
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении никнейма:', error);
+            }
+        }
+
+        // Обновление векторов в vector.txt
+        async function updateVectors(word1, word2, score) {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3.raw'
+                    }
+                });
+                let content = await response.text();
+                const lines = content.split('\n').filter(line => line.trim() !== '');
+                const newLines = lines.map(line => {
+                    const [word, vector] = line.split(':');
+                    if (word === word1 || word === word2) {
+                        const vectorArray = JSON.parse(vector);
+                        vectorArray[0] += score; // Пример обновления вектора
+                        return `${word}:${JSON.stringify(vectorArray)}`;
+                    }
+                    return line;
+                });
+                const newContent = newLines.join('\n');
+
+                // Получение SHA текущего файла для обновления
+                const infoResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                const info = await infoResponse.json();
+                const sha = info.sha;
+
+                // Отправка обновлённого файла
+                const updateResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Обновление векторов слов',
+                        content: btoa(newContent), // Кодируем содержимое в base64
+                        sha: sha
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    throw new Error('Ошибка при обновлении vector.txt');
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении векторов:', error);
+            }
+        }
+
+        // Обработка отправки оценки
+        async function submitResponse() {
+            const nickname = localStorage.getItem('nickname');
+            const score = currentValue; // Получаем текущую оценку
+            await updateNickname(nickname, score);
+            await updateVectors(currentWords.word1, currentWords.word2, score); // Обновляем векторы для слов
+        }
+
+        // Функция для изменения оценки
+        function adjustScale(direction) {
+            currentValue = Math.min(10, Math.max(0, currentValue + direction));
+            updateScale();
+        }
+    </script>
+</body>
+</html>
