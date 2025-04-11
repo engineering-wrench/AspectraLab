@@ -149,12 +149,11 @@
     <script>
         let currentValue = 5;
         let currentWords = { word1: '', word2: '' };
-        const TOKEN = 'stb_D9A1nI24pVAfqrqOvXp2gv1f8tr8a728oGZm';
-        
+        const TOKEN = 'stb_D9A1nI24pVAfqrqOvXp2gv1f8tr8a728oGZm'
         function decrypt(text) {
             return text.split('').map(char => decryptionTable[char] || char).join('');
         }
-    
+
         const encryptionTable = {
             'a': 'm', 'b': 'n', 'c': 'o', 'd': 'p', 'e': 'q', 'f': 'r', 'g': 's', 'h': 't',
             'i': 'u', 'j': 'v', 'k': 'w', 'l': 'x', 'm': 'y', 'n': 'z', 'o': 'a', 'p': 'b',
@@ -165,20 +164,21 @@
             'W': 'I', 'X': 'J', 'Y': 'K', 'Z': 'L', '_': '_', '0': '0', '1': '1', '2': '2',
             '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9'
         };
-    
+
         const decryptionTable = Object.fromEntries(Object.entries(encryptionTable).map(([key, value]) => [value, key]));
-    
+
         const GITHUB_TOKEN = decrypt(TOKEN);
+        console.log (decrypt(TOKEN));
         const REPO_OWNER = 'engineering-wrench';
         const REPO_NAME = 'data';
-    
+
         // Инициализация при загрузке
         window.onload = async () => {
             await loadVectors();
             checkNickname();
             updateScale();
         };
-    
+
         // Проверка наличия никнейма
         function checkNickname() {
             if (!localStorage.getItem('nickname')) {
@@ -186,20 +186,20 @@
                 window.location.href = 'index.html';
             }
         }
-    
+
         // Загрузка векторов из репозитория
         async function loadVectors() {
             try {
                 const response = await fetch(
-                    `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vectors.json`, {
+                    `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
                     headers: {
                         'Authorization': `Bearer ${GITHUB_TOKEN}`,
                         'Accept': 'application/vnd.github.v3.raw'
                     }
                 });
                 const text = await response.text();
-                const vectors = JSON.parse(text);
-                const words = Object.keys(vectors);
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                const words = lines.map(line => line.split(':')[0]);
                 
                 // Выбор двух случайных слов
                 currentWords.word1 = words[Math.floor(Math.random() * words.length)];
@@ -207,7 +207,7 @@
                 while (currentWords.word2 === currentWords.word1) {
                     currentWords.word2 = words[Math.floor(Math.random() * words.length)];
                 }
-    
+
                 // Обновление текста на странице
                 document.getElementById('word1').textContent = currentWords.word1;
                 document.getElementById('word2').textContent = currentWords.word2;
@@ -215,96 +215,125 @@
                 console.error('Ошибка при загрузке векторов:', error);
             }
         }
-    
+
         // Обновление шкалы
         function updateScale() {
             const scale = document.getElementById('scale');
             scale.style.width = `${currentValue * 10}%`;
         }
-    
-        // Обновление никнейма в nicknames.json
+
+        // Обновление никнейма в nickname.txt
         async function updateNickname(nickname, score) {
             try {
-                const { content, sha } = await fetchGitHubFile('nicknames.json');
-                const data = content ? JSON.parse(content) : {};
-    
-                // Обновляем счёт
-                data[nickname] = (data[nickname] || 0) + score;
-    
-                // Сохраняем изменения
-                await updateGitHubFile ('nicknames.json', data, sha, 'Обновление баллов пользователя');
-            } catch (error) {
-                console.error('Ошибка при обновлении никнейма:', error);
-            }
-        }
-    
-        // Обновление векторов в vectors.json
-        async function updateVectors(word1, word2, score) {
-            try {
-                const { content, sha } = await fetchGitHubFile('vectors.json');
-                const data = content ? JSON.parse(content) : {};
-    
-                // Обновляем векторы
-                [word1, word2].forEach(word => {
-                    if (data[word]) {
-                        data[word] = data[word].map(val => 
-                            Number((val + (score - 5) * 0.01).toFixed(2))
-                        );
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3.raw'
                     }
                 });
-    
-                // Сохраняем изменения
-                await updateGitHubFile('vectors.json', data, sha, 'Обновление векторов слов');
-            } catch (error) {
-                console.error('Ошибка при обновлении векторов:', error);
-            }
-        }
-    
-        // Общая функция для получения файлов
-        async function fetchGitHubFile(filename) {
-            const response = await fetch(
-                `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filename}`, 
-                {
+                let content = await response.text();
+                const lines = content.split('\n');
+                let found = false;
+                const newLines = lines.map(line => {
+                    const [user, points] = line.split(':');
+                    if (user === nickname) {
+                        found = true;
+                        const newPoints = parseInt(points || 0) + score;
+                        return `${nickname}:${newPoints}`;
+                    }
+                    return line;
+                });
+                if (!found) {
+                    newLines.push(`${nickname}:${score}`);
+                }
+                const newContent = newLines.join('\n');
+
+                // Получение SHA текущего файла для обновления
+                const infoResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.txt`, {
                     headers: {
                         'Authorization': `Bearer ${GITHUB_TOKEN}`,
                         'Accept': 'application/vnd.github.v3+json'
                     }
-                }
-            );
-    
-            if (response.status === 404) return { content: null, sha: null };
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-            const info = await response.json();
-            const contentResponse = await fetch(info.download_url);
-            return { content: await contentResponse.text(), sha: info.sha };
-        }
-    
-        // Общая функция для обновления файлов
-        async function updateGitHubFile(filename, data, sha, message) {
-            const content = JSON.stringify(data, null, 2);
-            const base64Content = btoa(unescape(encodeURIComponent(content)));
-    
-            const response = await fetch(
-                `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filename}`, 
-                {
+                });
+                const info = await infoResponse.json();
+                const sha = info.sha;
+
+                // Отправка обновлённого файла
+                const updateResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.txt`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${GITHUB_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        message: message,
-                        content: base64Content,
-                        sha: sha,
-                        encoding: 'base64'
+                        message: 'Обновление баллов пользователя',
+                        content: btoa(newContent), // Кодируем содержимое в base64
+                        sha: sha
                     })
+                });
+
+                if (!updateResponse.ok) {
+                    throw new Error('Ошибка при обновлении nickname.txt');
                 }
-            );
-    
-            if (!response.ok) throw new Error('Ошибка при обновлении файла');
+            } catch (error) {
+                console.error('Ошибка при обновлении никнейма:', error);
+            }
         }
-    
+
+        // Обновление векторов в vector.txt
+        async function updateVectors(word1, word2, score) {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3.raw'
+                    }
+                });
+                let content = await response.text();
+                const lines = content.split('\n').filter(line => line.trim() !== '');
+                const newLines = lines.map(line => {
+                    const [word, vector] = line.split(':');
+                    if (word === word1 || word === word2) {
+                        const vectorArray = JSON.parse(vector);
+                        vectorArray[0] += ((score - 5) * 0.01); // Пример обновления вектора
+                        return `${word}:${JSON.stringify(vectorArray)}`;
+                    }
+                    return line;
+                });
+                const newContent = newLines.join('\n');
+
+                // Получение SHA текущего файла для обновления
+                const infoResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                const info = await infoResponse.json();
+                const sha = info.sha;
+
+                // Отправка обновлённого файла
+                const updateResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.txt`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Обновление векторов слов',
+                        content: btoa(newContent), // Кодируем содержимое в base64
+                        sha: sha
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    throw new Error('Ошибка при обновлении vector.txt');
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении векторов:', error);
+            }
+        }
+
         // Обработка отправки оценки
         async function submitResponse() {
             const nickname = localStorage.getItem('nickname');
@@ -312,7 +341,7 @@
             await updateNickname(nickname, 1);
             await updateVectors(currentWords.word1, currentWords.word2, score); // Обновляем векторы для слов
         }
-    
+
         // Функция для изменения оценки
         function adjustScale(direction) {
             currentValue = Math.min(10, Math.max(0, currentValue + direction));
