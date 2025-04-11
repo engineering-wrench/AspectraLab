@@ -72,7 +72,7 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(76,175,80,0.3);
         }
-        
+
         .modal {
             display: none;
             position: fixed;
@@ -121,19 +121,10 @@
             opacity: 0.9;
             transform: translateY(-2px);
         }
-
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Модальное окно авторизации -->
-        <div id="authModal" class="modal">
-            <div class="modal-content">
-                <h2>Войдите для продолжения</h2>
-                <button onclick="loginWithGoogle()" class="auth-button google">Войти через Google</button>
-            </div>
-        </div>
-
         <h1>Список задач</h1>
 
         <div class="task">
@@ -143,42 +134,40 @@
         </div>
     </div>
 
-    <script>
-        // Проверка авторизации при загрузке
-        document.addEventListener('DOMContentLoaded', function() {
-            const nickname = localStorage.getItem('nickname');
-            if (!nickname) {
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <h2>Авторизация</h2>
+            <p>Пожалуйста, войдите, чтобы продолжить.</p>
+            <button class="auth-button google" onclick="loginWithGoogle()">Войти через Google</button>
+            <button class="auth-button telegram" onclick="loginWithTelegram()">Войти через Telegram</button>
+        </div>
+    </div>
+
+    <script >
+        function checkUser () {
+            const userNickname = localStorage.getItem('nickname');
+            if (!userNickname) {
                 document.getElementById('authModal').style.display = 'flex';
             }
-        });
+        }
 
-        // Авторизация через Google
         function loginWithGoogle() {
+            const redirectUri = 'https://engineering-wrench.github.io/auth/google';
             const clientId = '154926191604-p7aftejghf48f4dik7rekrmg6kcos9lg.apps.googleusercontent.com';
-            const redirectUri = encodeURIComponent(window.location.origin + '/auth/google');
-            const scope = encodeURIComponent('profile email');
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
+            const scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid';
+            const responseType = 'token';
+            const accessType = 'online';
+
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=${responseType}&redirect_uri=${redirectUri}&client_id=${clientId}&scope=${scope}&access_type=${accessType}`;
             window.location.href = authUrl;
         }
 
-        // Обработка ответа от Google (должен быть на странице /auth/google)
-        // Пример для упрощения (реализация требует отдельной страницы)
-        const hash = window.location.hash.substr(1);
-        if (hash.includes('access_token')) {
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get('access_token');
-            
-            fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                localStorage.setItem('nickname', data.name || data.email);
-                window.location.href = '/';
-            });
+        function loginWithTelegram() {
+            const telegramAuthUrl = 'https://telegram.me/your_bot?start=auth';
+            window.location.href = telegramAuthUrl;
         }
+
+        window.onload = checkUser ;
     </script>
 </body>
 </html>
