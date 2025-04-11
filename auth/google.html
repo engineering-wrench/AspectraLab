@@ -27,10 +27,10 @@
             .then(data => {
                 // Получаем никнейм пользователя
                 const nickname = data.name; // или data.nickname, в зависимости от API
-                console.log('Никнейм пользователя:', nickname);
-                
+                localStorage.setItem('nickname', nickname);
+
                 // Перенаправляем пользователя на главную страницу
-                window.location.href = 'https://engineering-wrench.github.io/AspectraLab/';
+                window.location.href = 'https://engineering-wrench.github.io/AspectraLab/index.html';
             })
             .catch(error => {
                 console.error('Ошибка:', error);
