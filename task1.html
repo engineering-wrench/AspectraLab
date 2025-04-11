@@ -151,6 +151,19 @@
         let currentWords = { word1: '', word2: '' };
         const TOKEN = 'stb_D9A1nI24pVAfqrqOvXp2gv1f8tr8a728oGZm'
         
+        // Функции для корректной работы с UTF-8
+        function utf8ToBase64(str) {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => 
+                String.fromCharCode(parseInt(p1, 16))
+            ));
+        }
+    
+        function base64ToUtf8(str) {
+            return decodeURIComponent(atob(str).split('').map(c => 
+                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            ).join(''));
+        }
+    
         function decrypt(text) {
             return text.split('').map(char => decryptionTable[char] || char).join('');
         }
@@ -172,14 +185,12 @@
         const REPO_OWNER = 'engineering-wrench';
         const REPO_NAME = 'data';
     
-        // Инициализация при загрузке
         window.onload = async () => {
             await loadVectors();
             checkNickname();
             updateScale();
         };
     
-        // Проверка наличия никнейма
         function checkNickname() {
             if (!localStorage.getItem('nickname')) {
                 alert('Никнейм не найден! Пожалуйста, установите его на главной странице.');
@@ -187,7 +198,6 @@
             }
         }
     
-        // Загрузка векторов из репозитория
         async function loadVectors() {
             try {
                 const response = await fetch(
@@ -198,18 +208,16 @@
                     }
                 });
                 const data = await response.json();
-                const content = atob(data.content);
+                const content = base64ToUtf8(data.content);
                 const vectors = JSON.parse(content);
                 const words = Object.keys(vectors);
                 
-                // Выбор двух случайных слов
                 currentWords.word1 = words[Math.floor(Math.random() * words.length)];
                 currentWords.word2 = words[Math.floor(Math.random() * words.length)];
                 while (currentWords.word2 === currentWords.word1) {
                     currentWords.word2 = words[Math.floor(Math.random() * words.length)];
                 }
     
-                // Обновление текста на странице
                 document.getElementById('word1').textContent = currentWords.word1;
                 document.getElementById('word2').textContent = currentWords.word2;
             } catch (error) {
@@ -217,13 +225,11 @@
             }
         }
     
-        // Обновление шкалы
         function updateScale() {
             const scale = document.getElementById('scale');
             scale.style.width = `${currentValue * 10}%`;
         }
     
-        // Обновление никнейма в nickname.json
         async function updateNickname(nickname, score) {
             try {
                 const response = await fetch(
@@ -234,14 +240,12 @@
                     }
                 });
                 const data = await response.json();
-                const content = atob(data.content);
+                const content = base64ToUtf8(data.content);
                 const nicknames = JSON.parse(content);
     
-                // Обновление баллов
                 nicknames[nickname] = (nicknames[nickname] || 0) + score;
                 const newContent = JSON.stringify(nicknames, null, 2);
     
-                // Отправка обновлённого файла
                 const updateResponse = await fetch(
                     `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/nickname.json`, {
                     method: 'PUT',
@@ -251,7 +255,7 @@
                     },
                     body: JSON.stringify({
                         message: 'Обновление баллов пользователя',
-                        content: btoa(newContent),
+                        content: utf8ToBase64(newContent),
                         sha: data.sha
                     })
                 });
@@ -264,7 +268,6 @@
             }
         }
     
-        // Обновление векторов в vector.json
         async function updateVectors(word1, word2, score) {
             try {
                 const response = await fetch(
@@ -275,15 +278,13 @@
                     }
                 });
                 const data = await response.json();
-                const content = atob(data.content);
+                const content = base64ToUtf8(data.content);
                 const vectors = JSON.parse(content);
     
-                // Обновление векторов
                 if (vectors[word1]) vectors[word1][0] += (score - 5) * 0.01;
                 if (vectors[word2]) vectors[word2][0] += (score - 5) * 0.01;
                 const newContent = JSON.stringify(vectors, null, 2);
     
-                // Отправка обновлённого файла
                 const updateResponse = await fetch(
                     `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.json`, {
                     method: 'PUT',
@@ -293,7 +294,7 @@
                     },
                     body: JSON.stringify({
                         message: 'Обновление векторов слов',
-                        content: btoa(newContent),
+                        content: utf8ToBase64(newContent),
                         sha: data.sha
                     })
                 });
@@ -306,7 +307,6 @@
             }
         }
     
-        // Обработка отправки оценки
         async function submitResponse() {
             const nickname = localStorage.getItem('nickname');
             const score = currentValue;
@@ -314,7 +314,6 @@
             await updateVectors(currentWords.word1, currentWords.word2, score);
         }
     
-        // Функция для изменения оценки
         function adjustScale(direction) {
             currentValue = Math.min(10, Math.max(0, currentValue + direction));
             updateScale();
