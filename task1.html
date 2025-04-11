@@ -132,6 +132,18 @@
             Слово <strong id="word1">*слово1*</strong> похоже на слово 
             <strong id="word2">*слово2*</strong> как...
         </div>
+
+        <div class="scale-container">
+            <div class="scale-fill" id="scale"></div>
+        </div>
+
+        <div class="buttons-container">
+            <button class="control-button secondary" onclick="adjustScale(-1)">↓ Ниже</button>
+            <button class="control-button secondary" onclick="adjustScale(1)">↑ Выше</button>
+            <button class="control-button warning" onclick="submitResponse()">✨ Идеально</button>
+            <button class="control-button" onclick="goBack()">↩ Вернуться</button>
+        </div>
+
     </div>
 
     <script>
