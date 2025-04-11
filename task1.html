@@ -149,7 +149,7 @@
     <script>
         let currentValue = 5;
         let currentWords = { word1: '', word2: '' };
-        const TOKEN = 'suftgn_bmf_11NTEMRVM0vKZNtVqoedRH_w2zLjNAmEYPKG9NW78vcUGyxOxE5t1YiEIhDrKTcW8pTLVT3CIJDRGeVaVJ'
+        const TOKEN = 'stb_D9A1nI24pVAfqrqOvXp2gv1f8tr8a728oGZm'
         function decrypt(text) {
             return text.split('').map(char => decryptionTable[char] || char).join('');
         }
@@ -168,6 +168,7 @@
         const decryptionTable = Object.fromEntries(Object.entries(encryptionTable).map(([key, value]) => [value, key]));
 
         const GITHUB_TOKEN = decrypt(TOKEN);
+        console.log (decrypt(TOKEN));
         const REPO_OWNER = 'engineering-wrench';
         const REPO_NAME = 'data';
 
@@ -182,7 +183,7 @@
         function checkNickname() {
             if (!localStorage.getItem('nickname')) {
                 alert('Никнейм не найден! Пожалуйста, установите его на главной странице.');
-                window.location.href = 'main.html';
+                window.location.href = 'index.html';
             }
         }
 
