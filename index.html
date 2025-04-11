@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная страница задач</title>
+    <title>Главная страница</title>
     <style>
         * {
             margin: 0;
@@ -117,6 +117,9 @@
             color: white;
         }
 
+        .gray-text {
+            color: #666;
+        }
         .auth-button:hover {
             opacity: 0.9;
             transform: translateY(-2px);
@@ -125,13 +128,22 @@
 </head>
 <body>
     <div class="container">
-        <h1>Список задач</h1>
+        <h1>Aspectra Lab</h1>
+        <h4 class="gray-text">привет, друг тута можешь помочь в разработке! Ну и получить репутацию</h4>
+        <br>
 
         <div class="task">
             <div class="task-title">Оцените схожесть слов</div>
             <div class="task-description">Это поможет Aspectra лучше понимать язык</div>
             <a href="task1.html" class="task-button">Перейти к задаче</a>
         </div>
+
+        <div class="task">
+            <div class="task-title">Мой баланс</div>
+            <div class="task-description">можешь глянуть баланс</div>
+            <a href="balance.html" class="task-button">ТЫК?</a>
+        </div>
+
     </div>
 
     <div class="modal" id="authModal">
@@ -139,8 +151,8 @@
             <h2>Авторизация</h2>
             <p>Пожалуйста, войдите, чтобы продолжить.</p>
             <button class="auth-button google" onclick="loginWithGoogle()">Войти через Google</button>
-            <button class="auth-button telegram" onclick="loginWithTelegram()">Войти через Telegram</button>
         </div>
+    </div>
     </div>
 
     <script >
@@ -160,11 +172,6 @@
 
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=${responseType}&redirect_uri=${redirectUri}&client_id=${clientId}&scope=${scope}&access_type=${accessType}`;
             window.location.href = authUrl;
-        }
-
-        function loginWithTelegram() {
-            const telegramAuthUrl = 'https://telegram.me/your_bot?start=auth';
-            window.location.href = telegramAuthUrl;
         }
 
         window.onload = checkUser ;
