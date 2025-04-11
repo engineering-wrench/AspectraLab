@@ -8,8 +8,6 @@
         const accessToken = params.get('access_token');
 
         if (accessToken) {
-            // Сохраняем токен в localStorage
-            localStorage.setItem('google_access_token', accessToken);
             
             // Запрос к API Google для получения информации о пользователе
             fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -27,6 +25,8 @@
             .then(data => {
                 // Получаем никнейм пользователя
                 const nickname = data.name; // или data.nickname, в зависимости от API
+                console.log ("работает")
+                console.log (nickname)
                 localStorage.setItem('nickname', nickname);
 
                 // Перенаправляем пользователя на главную страницу
