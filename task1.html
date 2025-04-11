@@ -280,11 +280,11 @@
                 const data = await response.json();
                 const content = base64ToUtf8(data.content);
                 const vectors = JSON.parse(content);
-    
+
                 if (vectors[word1]) vectors[word1][0] += (score - 5) * 0.01;
                 if (vectors[word2]) vectors[word2][0] += (score - 5) * 0.01;
                 const newContent = JSON.stringify(vectors, null, 2);
-    
+
                 const updateResponse = await fetch(
                     `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/vector.json`, {
                     method: 'PUT',
@@ -298,10 +298,13 @@
                         sha: data.sha
                     })
                 });
-                loadVectors ()
+
                 if (!updateResponse.ok) {
                     throw new Error('Ошибка при обновлении vector.json');
                 }
+
+                await loadVectors();
+
             } catch (error) {
                 console.error('Ошибка при обновлении векторов:', error);
             }
