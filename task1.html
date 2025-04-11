@@ -298,7 +298,7 @@
                         sha: data.sha
                     })
                 });
-    
+                loadVectors ()
                 if (!updateResponse.ok) {
                     throw new Error('Ошибка при обновлении vector.json');
                 }
