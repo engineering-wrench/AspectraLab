@@ -295,7 +295,7 @@
                     const [word, vector] = line.split(':');
                     if (word === word1 || word === word2) {
                         const vectorArray = JSON.parse(vector);
-                        vectorArray[0] += score; // Пример обновления вектора
+                        vectorArray[0] += ((score - 5) * 0.01); // Пример обновления вектора
                         return `${word}:${JSON.stringify(vectorArray)}`;
                     }
                     return line;
@@ -338,7 +338,7 @@
         async function submitResponse() {
             const nickname = localStorage.getItem('nickname');
             const score = currentValue; // Получаем текущую оценку
-            await updateNickname(nickname, score);
+            await updateNickname(nickname, 1);
             await updateVectors(currentWords.word1, currentWords.word2, score); // Обновляем векторы для слов
         }
 
