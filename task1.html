@@ -149,7 +149,8 @@
     <script>
         let currentValue = 5;
         let currentWords = { word1: '', word2: '' };
-        const GITHUB_TOKEN = process.env.GITHUB;
+        const TOKEN = 'Z2hwXzBBMmljVmNaTk9lSm9QVmxpR0c4VXZhTVhuUDJuUzRYeTl5Wg=='
+        const GITHUB_TOKEN = atob(TOKEN);
         const REPO_OWNER = 'engineering-wrench';
         const REPO_NAME = 'data';
 
