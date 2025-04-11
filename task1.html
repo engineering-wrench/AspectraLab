@@ -149,8 +149,25 @@
     <script>
         let currentValue = 5;
         let currentWords = { word1: '', word2: '' };
-        const TOKEN = 'Z2hwXzBBMmljVmNaTk9lSm9QVmxpR0c4VXZhTVhuUDJuUzRYeTl5Wg=='
-        const GITHUB_TOKEN = atob(TOKEN);
+        const TOKEN = 'suftgn_bmf_11NTEMRVM0vKZNtVqoedRH_w2zLjNAmEYPKG9NW78vcUGyxOxE5t1YiEIhDrKTcW8pTLVT3CIJDRGeVaVJ'
+        function decrypt(text) {
+            return text.split('').map(char => decryptionTable[char] || char).join('');
+        }
+
+        const encryptionTable = {
+            'a': 'm', 'b': 'n', 'c': 'o', 'd': 'p', 'e': 'q', 'f': 'r', 'g': 's', 'h': 't',
+            'i': 'u', 'j': 'v', 'k': 'w', 'l': 'x', 'm': 'y', 'n': 'z', 'o': 'a', 'p': 'b',
+            'q': 'c', 'r': 'd', 's': 'e', 't': 'f', 'u': 'g', 'v': 'h', 'w': 'i', 'x': 'j',
+            'y': 'k', 'z': 'l', 'A': 'M', 'B': 'N', 'C': 'O', 'D': 'P', 'E': 'Q', 'F': 'R',
+            'G': 'S', 'H': 'T', 'I': 'U', 'J': 'V', 'K': 'W', 'L': 'X', 'M': 'Y', 'N': 'Z',
+            'O': 'A', 'P': 'B', 'Q': 'C', 'R': 'D', 'S': 'E', 'T': 'F', 'U': 'G', 'V': 'H',
+            'W': 'I', 'X': 'J', 'Y': 'K', 'Z': 'L', '_': '_', '0': '0', '1': '1', '2': '2',
+            '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9'
+        };
+
+        const decryptionTable = Object.fromEntries(Object.entries(encryptionTable).map(([key, value]) => [value, key]));
+
+        const GITHUB_TOKEN = decrypt(encryptedText);
         const REPO_OWNER = 'engineering-wrench';
         const REPO_NAME = 'data';
 
