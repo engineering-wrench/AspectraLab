@@ -147,12 +147,11 @@
     </div>
 
     <script>
+        let currentValue = 5;
+        let currentWords = { word1: '', word2: '' };
         const GITHUB_TOKEN = process.env.GITHUB;
         const REPO_OWNER = 'engineering-wrench';
         const REPO_NAME = 'data';
-        
-        let currentValue = 5;
-        let currentWords = { word1: '', word2: '' };
 
         // Инициализация при загрузке
         window.onload = async () => {
