@@ -458,10 +458,11 @@
             }
 
             const nickname = localStorage.getItem('nickname');
-            const score = currentPercentage / 10; // Преобразуем в баллы
+            const score = currentPercentage / 10;
 
             try {
-                await updateNickname(nickname , RepForWork);
+                // Убедимся, что передаем число
+                await updateNickname(nickname, RepForWork); 
                 const index1 = dictionaryWords.indexOf(currentWords.word1);
                 const index2 = dictionaryWords.indexOf(currentWords.word2);
 
@@ -472,7 +473,7 @@
 
                 await updateVectorIndices(nickname, index1, index2, score);
                 await loadDictionary();
-                currentPercentage = 50; // Сброс значения шкалы
+                currentPercentage = 50;
                 updateScale();
             } catch (error) {
                 alert('Ошибка при сохранении данных: ' + error.message);
