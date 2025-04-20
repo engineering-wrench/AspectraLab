@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Цензура</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .input-block {
+            margin: 20px 0;
+        }
+
+        .input-block textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            background: #f8f9fa;
+        }
+
+        .button-block {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .send-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.3);
+        }
+
+        .exit-button {
+            display: block;
+            width: 20%;
+            padding: 15px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .exit-button:hover {
+            background: #cc0000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(204,0,0,0.3);
+        }
+
+        .result-block {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .result-positive {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .result-negative {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="button-block">
+        <a href="index.html" class="exit-button">Выйти</a>
+    </div>
+
+    <div class="container">
+
+        <h1>Анализатор текста</h1>
+        
+        <div class="input-block">
+            <textarea id="user-input" placeholder="Введите текст для анализа..."></textarea>
+        </div>
+
+        <div class="button-block">
+            <button class="send-button" onclick="analyzeText()">Анализировать</button>
+        </div>
+
+        <div class="result-block" id="result-block">
+            <p id="result-text"></p>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация глобального объекта Vector
+        let Vector = {};
+
+        // Функция для загрузки текста из файла data.txt
+        async function loadTextFromFile() {
+            try {
+                const response = await fetch('data.txt');
+                const text = await response.text();
+                return text;
+            } catch (error) {
+                console.error('Ошибка при загрузке файла:', error);
+                return '';
+            }
+        }
+
+        // Функция для создания векторов
+        function getEmbedding(text) {
+            const cleanedText = text.replace(/[^а-яА-Я ]/g, ' ');
+            const cleanedTextTrimmed = cleanedText.replace(/ +/g, ' ');
+            const allWords = cleanedTextTrimmed.split(' ');
+
+            for (let i = 0; i < allWords.length; i++) {
+                const word = allWords[i];
+                if (Vector[word]) {
+                    if (i > 0) {
+                        const prevWord = allWords[i - 1];
+                        Vector[word][prevWord] = (Vector[word][prevWord] || 0) + 1;
+                    }
+                    if (i < allWords.length - 1) {
+                        const nextWord = allWords[i + 1];
+                        Vector[word][nextWord] = ( Vector[word][nextWord] || 0) + 1;
+                    }
+                } else {
+                    const newEntry = {};
+                    if (i > 0) {
+                        const prevWord = allWords[i - 1];
+                        newEntry[prevWord] = 1;
+                    }
+                    if (i < allWords.length - 1) {
+                        const nextWord = allWords[i + 1];
+                        newEntry[nextWord] = 1;
+                    }
+                    Vector[word] = newEntry;
+                }
+            }
+            return Vector;
+        }
+
+        // Функция для токенизации текста
+        function tokenize(text, vector) {
+            const words = text.split(' ');
+            const resultVector = {};
+
+            for (const word of words) {
+                if (vector[word]) {
+                    for (const connectedWord in vector[word]) {
+                        resultVector[connectedWord] = (resultVector[connectedWord] || 0) + vector[word][connectedWord];
+                    }
+                }
+            }
+
+            return resultVector;
+        }
+
+        // Функция для вычисления схожести
+        function wordSimilarity(vector1, vector2) {
+            const allWords = new Set([...Object.keys(vector1), ...Object.keys(vector2)]);
+            const listVector1 = Array.from(allWords).map(word => vector1[word] ? 1 : 0);
+            const listVector2 = Array.from(allWords).map(word => vector2[word] ? 1 : 0);
+            const dotProduct = listVector1.reduce((sum, value, index) => sum + value * listVector2[index], 0);
+            const magnitude1 = Math.sqrt(listVector1.reduce((sum, value) => sum + value ** 2, 0));
+            const magnitude2 = Math.sqrt(listVector2.reduce((sum, value) => sum + value ** 2, 0));
+
+            if (magnitude1 === 0 || magnitude2 === 0) {
+                return 0;
+            }
+
+            return dotProduct / (magnitude1 * magnitude2);
+        }
+
+        // Основная функция анализа текста
+        async function analyzeText() {
+            const userInput = document.getElementById('user-input').value;
+            const resultBlock = document.getElementById('result-block');
+            const resultText = document.getElementById('result-text');
+
+            if (!userInput.trim()) {
+                alert('Пожалуйста, введите текст для анализа!');
+                return;
+            }
+
+            const textFromFile = await loadTextFromFile();
+            const vector = getEmbedding(textFromFile);
+            const userVector = tokenize(userInput, vector);
+
+            const sexWords = ['секс', 'член', 'сперма', 'ебали', 'трахали'];
+            let error = 0;
+
+            for (const word of sexWords) {
+                const wordVector = vector[word];
+                const similarity = wordSimilarity(userVector, wordVector || {});
+                error += similarity;
+            }
+
+            resultBlock.style.display = 'block';
+            if (error > 0.5) {
+                resultText.textContent = 'ты написал что то плохое';
+                resultBlock.className = 'result-block result-negative';
+            } else {
+                resultText.textContent = 'всё ок';
+                resultBlock.className = 'result-block result-positive';
+            }
+        }
+    </script>
+</body>
+</html>
