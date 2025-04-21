@@ -152,6 +152,20 @@
             font-size: 16px;
             color: #333;
         }
+
+        strike {
+            background-color: #ff4444;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .positive {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -163,13 +177,8 @@
         <h1>Цензура</h1>
         
         <div class="input-block">
-            <textarea id="user-input" placeholder="Введите текст для анализа..."></textarea>
+            <textarea id="user-input" placeholder="Введите текст для анализа..." oninput="analyzeText()"></textarea>
         </div>
-
-        <div class="button-block">
-            <button class="send-button" onclick="analyzeText()">Анализировать</button>
-        </div>
-
         <!-- Добавляем блок для шкалы прогресса -->
         <div class="threshold-block">
             <span class="threshold-value" id="threshold-value">Порог: 0.5</span>
@@ -177,7 +186,7 @@
         </div>
 
         <div class="result-block" id="result-block">
-            <p id="result-text"></p>
+            <div id="result-text"></div>
         </div>
     </div>
 
@@ -202,13 +211,13 @@
         }
 
         function getEmbedding(text) {
-            const cleanedText = text.replace(/[^а-яА-Я ]/g, ' ');
+            const cleanedText = text.toLowerCase().replace(/[^а-яА-Я ]/g, ' ');
             const cleanedTextTrimmed = cleanedText.replace(/ +/g, ' ');
             const allWords = cleanedTextTrimmed.split(' ');
 
             for (let i = 0; i < allWords.length; i++) {
                 const word = allWords[i];
-                if (Vector[word]) {
+                if (Vector.hasOwnProperty(word)) {
                     if (i > 0) {
                         const prevWord = allWords[i - 1];
                         Vector[word][prevWord] = (Vector[word][prevWord] || 0) + 1;
@@ -234,11 +243,12 @@
         }
 
         function tokenize(text, vector) {
-            const words = text.split(' ');
+            const cleanedText = text.toLowerCase();
+            const words = cleanedText.split(' ');
             const resultVector = {};
 
             for (const word of words) {
-                if (vector[word]) {
+                if (vector.hasOwnProperty(word)) {
                     for (const connectedWord in vector[word]) {
                         resultVector[connectedWord] = (resultVector[connectedWord] || 0) + vector[word][connectedWord];
                     }
@@ -250,11 +260,20 @@
 
         function wordSimilarity(vector1, vector2) {
             const allWords = new Set([...Object.keys(vector1), ...Object.keys(vector2)]);
-            const listVector1 = Array.from(allWords).map(word => vector1[word] ? 1 : 0);
-            const listVector2 = Array.from(allWords).map(word => vector2[word] ? 1 : 0);
-            const dotProduct = listVector1.reduce((sum, value, index) => sum + value * listVector2[index], 0);
-            const magnitude1 = Math.sqrt(listVector1.reduce((sum, value) => sum + value ** 2, 0));
-            const magnitude2 = Math.sqrt(listVector2.reduce((sum, value) => sum + value ** 2, 0));
+            let dotProduct = 0;
+            let magnitude1 = 0;
+            let magnitude2 = 0;
+
+            allWords.forEach(word => {
+                const val1 = vector1[word] || 0;
+                const val2 = vector2[word] || 0;
+                dotProduct += val1 * val2;
+                magnitude1 += val1 ** 2;
+                magnitude2 += val2 ** 2;
+            });
+
+            magnitude1 = Math.sqrt(magnitude1);
+            magnitude2 = Math.sqrt(magnitude2);
 
             if (magnitude1 === 0 || magnitude2 === 0) {
                 return 0;
@@ -269,7 +288,7 @@
             const resultText = document.getElementById('result-text');
 
             if (!userInput.trim()) {
-                alert('поле пустое!');
+                resultBlock.style.display = 'none';
                 return;
             }
 
@@ -277,22 +296,58 @@
             const vector = getEmbedding(textFromFile);
             const userVector = tokenize(userInput, vector);
 
-            const sexWords = ['секс', 'член', 'сперма', 'ебали', 'трахали'];
-            let error = 0;
+            const sexSentences = [
+                "что делать если я хочу секса",
+                "тебе не нужно прятать свои красивые груди под дополнительной одеждой",
+                "хочу полизать твои сосочки",
+                "приласкай мой член ручкой и дай мне поласкать твои груди",
+                "сосать член"
+            ];
 
-            for (const word of sexWords) {
-                const wordVector = vector[word];
-                const similarity = wordSimilarity(userVector, wordVector || {});
+            const positiveSentences = [
+                "сосать чупа-чупс",
+                "летать на воздушном шаре",
+                "играть с пушистыми котятами",
+                "пушистая киска"
+            ];
+
+            let error = 0;
+            for (const sentence of sexSentences) {
+                const sentenceVector = tokenize(sentence, vector);
+                const similarity = wordSimilarity(userVector, sentenceVector);
                 error += similarity;
+            }
+
+            let positiveSimilarity = 0;
+            for (const sentence of positiveSentences) {
+                const sentenceVector = tokenize(sentence, vector);
+                const similarity = wordSimilarity(userVector, sentenceVector);
+                positiveSimilarity += similarity;
+            }
+
+            error -= positiveSimilarity;
+            if (error < 0) {
+                error = 0;
             }
 
             resultBlock.style.display = 'block';
             if (error > threshold) {
-                resultText.textContent = 'ты написал что то плохое';
                 resultBlock.className = 'result-block result-negative';
+                const sentences = userInput.toLowerCase().split('. ');
+                let resultHtml = '';
+                for (const sentence of sentences) {
+                    if (sexSentences.includes(sentence)) {
+                        resultHtml += `<strike>${sentence}</strike>. `;
+                    } else if (positiveSentences.includes(sentence)) {
+                        resultHtml += `<span class="positive">${sentence}</span>. `;
+                    } else {
+                        resultHtml += `${sentence}. `;
+                    }
+                }
+                resultText.innerHTML = resultHtml.trim();
             } else {
-                resultText.textContent = 'всё ок';
                 resultBlock.className = 'result-block result-positive';
+                resultText.textContent = userInput;
             }
         }
 
