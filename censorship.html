@@ -115,6 +115,43 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+
+        /* Добавляем стили для шкалы прогресса */
+        .threshold-block {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .threshold-slider {
+            width: 100%;
+            margin: 20px 0;
+            height: 5px;
+            -webkit-appearance: none;
+            background: #ddd;
+            outline: none;
+            border-radius: 5px;
+        }
+
+        .threshold-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .threshold-slider::-webkit-slider-thumb:hover {
+            background: #45a049;
+        }
+
+        .threshold-value {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -123,8 +160,7 @@
     </div>
 
     <div class="container">
-
-        <h1>Анализатор текста</h1>
+        <h1>Цензура</h1>
         
         <div class="input-block">
             <textarea id="user-input" placeholder="Введите текст для анализа..."></textarea>
@@ -134,16 +170,25 @@
             <button class="send-button" onclick="analyzeText()">Анализировать</button>
         </div>
 
+        <!-- Добавляем блок для шкалы прогресса -->
+        <div class="threshold-block">
+            <span class="threshold-value" id="threshold-value">Порог: 0.5</span>
+            <input type="range" min="0" max="1" step="0.1" value="0.5" class="threshold-slider" id="threshold-slider">
+        </div>
+
         <div class="result-block" id="result-block">
             <p id="result-text"></p>
         </div>
     </div>
 
     <script>
-        // Инициализация глобального объекта Vector
-        let Vector = {};
+        let threshold = 0.5;
 
-        // Функция для загрузки текста из файла data.txt
+        document.getElementById('threshold-slider').addEventListener('input', function(e) {
+            threshold = parseFloat(e.target.value);
+            document.getElementById('threshold-value').textContent = `Порог: ${threshold.toFixed(1)}`;
+        });
+
         async function loadTextFromFile() {
             try {
                 const response = await fetch('data.txt');
@@ -155,7 +200,6 @@
             }
         }
 
-        // Функция для создания векторов
         function getEmbedding(text) {
             const cleanedText = text.replace(/[^а-яА-Я ]/g, ' ');
             const cleanedTextTrimmed = cleanedText.replace(/ +/g, ' ');
@@ -170,7 +214,7 @@
                     }
                     if (i < allWords.length - 1) {
                         const nextWord = allWords[i + 1];
-                        Vector[word][nextWord] = ( Vector[word][nextWord] || 0) + 1;
+                        Vector[word][nextWord] = (Vector[word][nextWord] || 0) + 1;
                     }
                 } else {
                     const newEntry = {};
@@ -188,7 +232,6 @@
             return Vector;
         }
 
-        // Функция для токенизации текста
         function tokenize(text, vector) {
             const words = text.split(' ');
             const resultVector = {};
@@ -204,7 +247,6 @@
             return resultVector;
         }
 
-        // Функция для вычисления схожести
         function wordSimilarity(vector1, vector2) {
             const allWords = new Set([...Object.keys(vector1), ...Object.keys(vector2)]);
             const listVector1 = Array.from(allWords).map(word => vector1[word] ? 1 : 0);
@@ -220,14 +262,13 @@
             return dotProduct / (magnitude1 * magnitude2);
         }
 
-        // Основная функция анализа текста
         async function analyzeText() {
             const userInput = document.getElementById('user-input').value;
             const resultBlock = document.getElementById('result-block');
             const resultText = document.getElementById('result-text');
 
             if (!userInput.trim()) {
-                alert('Пожалуйста, введите текст для анализа!');
+                alert('поле пустое!');
                 return;
             }
 
@@ -245,7 +286,7 @@
             }
 
             resultBlock.style.display = 'block';
-            if (error > 0.5) {
+            if (error > threshold) {
                 resultText.textContent = 'ты написал что то плохое';
                 resultBlock.className = 'result-block result-negative';
             } else {
@@ -253,6 +294,9 @@
                 resultBlock.className = 'result-block result-positive';
             }
         }
+
+        document.getElementById('threshold-slider').value = threshold;
+        document.getElementById('threshold-value').textContent = `Порог: ${threshold.toFixed(1)}`;
     </script>
 </body>
 </html>
